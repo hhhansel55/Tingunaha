@@ -1,0 +1,1388 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Tingunaha - 現代賭場版 (v6 動畫)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --casino-green: #0a4d3c;
+  --casino-felt: #1a5f4a;
+  --gold: #fbbf24;
+  --gold-dark: #d97706;
+  --red: #dc2626;
+  --blue: #2563eb;
+  --white: #ffffff;
+  --gray-800: #1f2937;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  min-height: 100vh;
+  color: var(--white);
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:  
+    radial-gradient(circle at 20% 50%, rgba(251, 191, 36, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 50%, rgba(37, 99, 235, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.game-wrapper {
+  position: relative;
+  z-index: 1;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 10px;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  margin-bottom: 10px;
+  animation: fadeInDown 0.8s ease;
+}
+
+.logo {
+  font-size: 28px;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+  font-weight: 500;
+}
+
+/* 主遊戲區域 */
+.poker-table {
+  background: radial-gradient(ellipse at center, var(--casino-felt) 0%, var(--casino-green) 100%);
+  border-radius: 150px;
+  padding: 60px 25px; /* (Req 1) 再次增加垂直內距 */
+  position: relative;
+  box-shadow:  
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 0 80px rgba(0,0,0,0.3),
+    0 0 0 8px rgba(251, 191, 36, 0.2),
+    0 0 0 10px rgba(0,0,0,0.5);
+  animation: tableGlow 3s ease-in-out infinite;
+}
+
+@keyframes tableGlow {
+  0%, 100% { box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 0 80px rgba(0,0,0,0.3), 0 0 0 8px rgba(251, 191, 36, 0.2), 0 0 0 10px rgba(0,0,0,0.5); }
+  50% { box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 0 80px rgba(0,0,0,0.3), 0 0 0 8px rgba(251, 191, 36, 0.4), 0 0 0 10px rgba(0,0,0,0.5); }
+}
+
+/* 玩家區域 */
+.player-zone {
+  background: rgba(0,0,0,0.2);
+  border: 2px solid rgba(251, 191, 36, 0.3);
+  border-radius: 16px;
+  padding: 8px;
+  position: relative;
+  /* (Req 3) 移除 backdrop-filter 以修復 z-index 堆疊問題 */
+  /* backdrop-filter: blur(10px); */
+  transition: all 0.3s ease;
+  display: block;
+  text-align: center;
+  min-height: auto;
+  position: relative;
+  /* (Req 5) 移除 overflow: hidden 以顯示莊家按鈕 */
+  /* overflow: hidden; */
+}
+
+.player-zone.ai-player {
+  margin-bottom: 0;
+}
+.player-zone.human-player {
+  margin-top: 5px;
+  margin-bottom: 0;
+}
+
+.player-zone.active {
+  border-color: var(--gold);
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+}
+
+/* (Req 4) 修改：玩家資訊改為單行 flex */
+.player-info {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.player-avatar {
+  display: none;
+}
+
+.player-details h3 {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 0;
+}
+
+.chips-count {
+  font-size: 13px;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.dealer-button {
+  position: absolute;
+  right: -12px;
+  top: -12px;
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--gray-800);
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.5);
+  /* (Req 5) 移除旋轉動畫 */
+  /* animation: rotate 3s linear infinite; */
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 手牌 */
+.hand-cards {
+  display: flex;
+  gap: 2px; /* (Req 2) 縮小 gap */
+  justify-content: center;
+  margin-top: 6px;
+  min-height: 62px; /* (Req 2) 留白，匹配卡牌高度 */
+}
+
+.card {
+  width: 14vw;
+  height: 19.6vw;
+  max-width: 44px; /* (Req 2) 縮小卡牌 */
+  max-height: 61.6px; /* (Req 2) 縮小卡牌 (1.4 比例) */
+  border-radius: 5px; /* (Req 2) 縮小圓角 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 6vw;
+  font-weight: 800;
+  background: white;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  position: relative;
+  transition: transform 0.3s ease;
+}
+
+@media (min-width: 400px) {
+  .card {
+    font-size: 24px; /* (Req 2) 縮小字體 */
+  }
+}
+
+.card:hover {
+  transform: translateY(-4px);
+}
+
+.card-R { color: #dc2626; }
+.card-G { color: #16a34a; }
+.card-B { color: #2563eb; }
+.card-Y { color: #d97706; }
+
+.card-hidden {
+  background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+  color: transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-hidden::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 8px,
+    rgba(255,255,255,0.05) 8px,
+    rgba(255,255,255,0.05) 16px
+  );
+}
+
+/* (Req 4) 玩家/AI 翻牌動畫 (保留) */
+@keyframes cardDeal {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) rotateY(180deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotateY(0);
+  }
+}
+.card-deal-animate {
+  animation: cardDeal 0.7s ease backwards; /* (Req 4) 減慢動畫 */
+}
+
+/* (Req 4) 修改：公牌滑入動畫 */
+@keyframes cardSlideInRight {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.card-slide-in-right-animate {
+  animation: cardSlideInRight 0.7s ease-out backwards; /* (Req 4) 減慢動畫 */
+}
+/* --- (Req 4) 動畫結束 --- */
+
+
+/* (Req 1, 4, 5) 修改：社區牌區域 */
+.community-zone {
+  text-align: center;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* (Req 5) 新增：中央內容包裝器 (固定高度) */
+.community-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 94px; /* (Req 2) 調整高度 (62 card + 26 pot + 6 gap) */
+  padding: 5px 0;
+}
+
+.pot-container {
+  margin-bottom: 0;
+}
+
+.pot-amount {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0,0,0,0.6);
+  padding: 5px 14px; /* (Req 2) 縮小 */
+  border-radius: 30px;
+  font-size: 16px; /* (Req 2) 縮小 */
+  font-weight: 800;
+  color: var(--gold);
+  border: 2px solid var(--gold);
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+  animation: potGlow 2s ease-in-out infinite;
+}
+
+@keyframes potGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(251, 191, 36, 0.4); }
+  50% { box-shadow: 0 0 30px rgba(251, 191, 36, 0.7); }
+}
+
+.pot-amount::before {
+  content: '🪙';
+  font-size: 16px; /* (Req 2) 縮小 */
+}
+
+/* (Req 1) 新增：臨時投注區的 flex 容器 */
+.temp-bet-row {
+  display: flex;
+  width: 100%;
+  padding: 0 8px; /* 左右留白 */
+}
+.ai-row {
+  justify-content: flex-start;
+}
+.player-row {
+  justify-content: flex-end;
+}
+/* --- (Req 1) 修改結束 --- */
+
+
+/* (Req 1) 修改：臨時投注區 (不再是 absolute) */
+.temp-bet {
+  position: static;
+  background: rgba(0,0,0,0.5);
+  padding: 3px 10px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  width: 90px;
+  text-align: center;
+  margin: 0;
+  z-index: 10;
+}
+
+
+.board-cards {
+  display: flex;
+  gap: 3px; /* (Req 2) 縮小 gap */
+  justify-content: center;
+  align-items: center;
+  min-height: 62px; /* (Req 2) 固定高度，防止跳動 */
+}
+
+/* AI 思考指示器 */
+.thinking {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--gold);
+  font-style: italic;
+  font-size: 11px;
+  margin-left: 8px;
+}
+
+.thinking-dots span {
+  animation: blink 1.4s infinite;
+}
+
+.thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes blink {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+/* 動作按鈕 */
+.controls {
+  border-radius: 16px;
+  padding: 10px;
+  margin-top: 10px;
+  /* (Req 3) 移除 backdrop-filter 以修復 z-index 堆疊問題 */
+  /* backdrop-filter: blur(10px); */
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 9px 18px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn:hover::before {
+  width: 200px;
+  height: 200px;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+.btn-fold {
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  color: white;
+}
+
+.btn-call {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  color: white;
+}
+
+.btn-raise {
+  background: linear-gradient(135deg, #f97316 0%, #c2410c 100%);
+  color: white;
+}
+
+.btn-confirm {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  color: white;
+}
+
+.btn-new {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+  color: var(--gray-800);
+  font-size: 15px;
+  padding: 10px 28px;
+  width: 100%;
+}
+
+/* 下注輸入區 - 精簡版 */
+.bet-input-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.bet-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: center;
+}
+
+.bet-input {
+  width: 70px;
+  padding: 8px 6px;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  border: 2px solid var(--gold);
+  border-radius: 6px;
+  background: rgba(0,0,0,0.6);
+  color: var(--gold);
+}
+
+.btn-tiny {
+  padding: 8px 10px;
+  font-size: 12px;
+  min-width: 38px;
+  background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+  color: white;
+}
+
+/* 訊息提示 */
+.message-overlay {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+  color: var(--gray-800);
+  padding: 20px 32px;
+  border-radius: 12px;
+  font-size: 20px;
+  font-weight: 800;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  text-align: center;
+  max-width: 90%;
+}
+
+.message-overlay.show {
+  opacity: 1;
+  animation: messageSlide 0.5s ease;
+}
+
+@keyframes messageSlide {
+  from {
+    transform: translate(-50%, -60%);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, -50%);
+    opacity: 1;
+  }
+}
+
+/* 遊戲日誌 */
+.game-log {
+  background: rgba(0,0,0,0.6);
+  border-radius: 12px;
+  padding: 10px;
+  margin-top: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+}
+
+.game-log h4 {
+  color: var(--gold);
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.game-log pre {
+  color: rgba(255,255,255,0.8);
+  font-family: 'Inter', monospace;
+  font-size: 10px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* --- (Req 1) 修改：籌碼動畫樣式 --- */
+.flying-chip {
+  position: fixed;
+  width: 18px;
+  height: 18px;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  z-index: 9999; /* (Req 3) 確保在最上層 */
+  pointer-events: none;
+  opacity: 1;
+  transition: transform 0.8s ease-out, opacity 0.8s ease-out; /* (Req 4) 減慢動畫 */
+}
+
+/* --- (Req 2) 修改：行動宣告遮罩 (改黑色) --- */
+.action-flash {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5); /* (Req 2) 改為黑色 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  z-index: 10;
+  opacity: 0;
+  animation: flash-fade 1.0s ease-out; /* (Req 4) 減慢動畫 (0.8s -> 1.0s) */
+  pointer-events: none;
+}
+@keyframes flash-fade {
+  0% { opacity: 1; }
+  70% { opacity: 1; } /* 停留 70% 的時間 */
+  100% { opacity: 0; }
+}
+/* --- (Req 2) 樣式結束 --- */
+</style>
+</head>
+<body>
+  <div class="game-wrapper">
+    <div class="header">
+      <div class="logo">♠ TINGUNAHA ♦</div>
+      <div class="subtitle">現代賭場版 | 無限注德州撲克變體</div>
+    </div>
+
+    <div class="poker-table">
+      <div class="message-overlay" id="messageOverlay"></div>
+
+      <div class="player-zone ai-player" id="aiZone">
+        <div class="dealer-button hidden" id="dealerB">D</div>
+        <div class="player-info">
+          <h3>AI <span class="thinking hidden" id="aiThinking"><span class="thinking-dots"><span>.</span><span>.</span><span>.</span></span></span></h3>
+          <div class="chips-count" id="aiChips">🪙 50</div>
+        </div>
+        <div class="hand-cards" id="aiHand"></div>
+      </div>
+
+      <!-- (Req 1, 4, 5) 修改：社區牌區域結構 -->
+      <div class="community-zone">
+        
+        <!-- (Req 1) 臨時投注區 (AI) -->
+        <div class="temp-bet-row ai-row">
+          <div class="temp-bet" id="aiBet">🪙 0</div>
+        </div>
+        
+        <!-- (Req 5) 中央內容 (固定高度) -->
+        <div class="community-main">
+          <!-- (Req 1) 公牌與底池互換 -->
+          <div class="board-cards" id="boardCards"></div>
+          <div class="pot-container">
+            <div class="pot-amount" id="potDisplay">0</div>
+          </div>
+        </div>
+
+        <!-- (Req 1) 臨時投注區 (Player) -->
+        <div class="temp-bet-row player-row">
+          <div class="temp-bet" id="playerBet">🪙 0</div>
+        </div>
+
+      </div>
+      
+      <div class="player-zone human-player" id="playerZone">
+        <div class="dealer-button hidden" id="dealerA">D</div>
+        <div class="player-info">
+          <h3>您</h3>
+          <div class="chips-count" id="playerChips">🪙 50</div>
+        </div>
+        <div class="hand-cards" id="playerHand"></div>
+      </div>
+
+      <div class="controls">
+        <div class="action-buttons hidden" id="actionButtons">
+          <button class="btn btn-fold" id="btnFold">蓋牌</button>
+          <button class="btn btn-call" id="btnCall">跟注</button>
+          <button class="btn btn-raise" id="btnRaise">加注</button>
+        </div>
+
+        <div class="bet-input-zone hidden" id="betInputZone">
+          <div class="bet-input-wrapper">
+            <button class="btn btn-tiny" data-action="min">Min</button>
+            <button class="btn btn-tiny" data-action="minus5">-5</button>
+            <button class="btn btn-tiny" data-action="minus1">-1</button>
+            <input type="number" class="bet-input" id="betInput" value="2" min="2">
+            <button class="btn btn-tiny" data-action="plus1">+1</button>
+            <button class="btn btn-tiny" data-action="plus5">+5</button>
+            <button class="btn btn-tiny" data-action="allin">All</button>
+          </div>
+          <div class="action-buttons">
+            <button class="btn btn-confirm" id="btnConfirm">確定</button>
+            <button class="btn btn-fold" id="btnCancel">取消</button>
+          </div>
+        </div>
+
+        <button class="btn btn-new" id="btnNewGame">開始新局</button>
+      </div>
+    </div>
+
+    <div class="game-log">
+      <h4>🎲 遊戲日誌</h4>
+      <pre id="logContent">歡迎來到 Tingunaha 現代賭場版！
+點擊「開始新局」來開始遊戲。</pre>
+    </div>
+  </div>
+
+<script>
+// --- (Req 3) 新增：延遲輔助函數 ---
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// --- (Req 2) 新增：行動宣告輔助函數 ---
+function showActionFlash(playerIdx, actionText) {
+  return new Promise((resolve) => {
+    const zone = playerIdx === 0 ? document.getElementById('playerZone') : document.getElementById('aiZone');
+    const flash = document.createElement('div');
+    flash.className = 'action-flash';
+    flash.textContent = actionText;
+    zone.appendChild(flash);
+    
+    // onanimationend 會在 0.8 秒後觸發
+    flash.onanimationend = () => {
+      flash.remove();
+      resolve();
+    };
+  });
+}
+
+// --- (Req 1) 修改：籌碼動畫輔助函數 (移除隨機偏移) ---
+function animateChipMove(fromEl, toEl, amount) {
+  return new Promise((resolve) => {
+    const fromRect = fromEl.getBoundingClientRect();
+    const toRect = toEl.getBoundingClientRect();
+    const startX = fromRect.left + fromRect.width / 2;
+    const startY = fromRect.top + fromRect.height / 2;
+    const endX = toRect.left + toRect.width / 2;
+    const endY = toRect.top + toRect.height / 2;
+    // (Req 4) 修改：籌碼數量 = 真實金額 (最多 20 個)
+    const chipCount = Math.max(1, Math.min(20, Math.floor(amount)));
+    let promises = [];
+    for (let i = 0; i < chipCount; i++) {
+      promises.push(new Promise((chipResolve) => {
+        const chip = document.createElement('div');
+        chip.className = 'flying-chip';
+        // (Req 1) 移除隨機偏移
+        const offsetX = 0;
+        const offsetY = 0;
+        chip.style.left = `${startX + offsetX - 9}px`;
+        chip.style.top = `${startY + offsetY - 9}px`;
+        document.body.appendChild(chip);
+        // (Req 1) 移除隨機偏移
+        const endOffsetX = 0;
+        const endOffsetY = 0;
+        const deltaX = endX - startX + endOffsetX;
+        const deltaY = endY - startY + endOffsetY;
+        setTimeout(() => {
+          chip.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+          chip.style.opacity = '0';
+        }, 20 + i * 25);
+        chip.ontransitionend = () => {
+          chip.remove();
+          chipResolve();
+        };
+      }));
+    }
+    Promise.all(promises).then(resolve);
+  });
+}
+// --- 籌碼動畫結束 ---
+
+// --- (Req 4 & 5) 新增：渲染新公牌並返回動畫 Promise ---
+// --- (Req 3 V8) 修改：使用 appendChild 避免舊卡牌重繪 ---
+function renderNewBoardCards(animationClass) {
+  const boardEl = document.getElementById('boardCards');
+  const oldCardCount = boardEl.children.length;
+  
+  if (oldCardCount >= state.board.length) {
+    return Promise.resolve(); // 沒有新卡牌
+  }
+
+  let newCardElements = [];
+  for (let i = oldCardCount; i < state.board.length; i++) {
+    const card = state.board[i];
+    const cardHTML = renderCard(card); // 獲取 HTML 字符串
+    const div = document.createElement('div'); // 創建一個臨時 div
+    div.innerHTML = cardHTML.trim(); // 從字符串創建元素
+    const cardElement = div.firstChild;
+    newCardElements.push(cardElement);
+  }
+  
+  if (newCardElements.length === 0) {
+    return Promise.resolve();
+  }
+
+  const cardAnimationPromises = newCardElements.map((c, i) => {
+    return new Promise((resolve) => {
+      c.style.animationDelay = (i * 0.1) + 's';
+      c.classList.add(animationClass);
+      
+      // 監聽動畫結束事件
+      const animationEnded = () => {
+        c.removeEventListener('animationend', animationEnded);
+        resolve();
+      };
+      c.addEventListener('animationend', animationEnded);
+
+      // --- 新增：將元素附加到 DOM ---
+      boardEl.appendChild(c);
+    });
+  });
+  
+  return Promise.all(cardAnimationPromises);
+}
+
+
+// 遊戲邏輯 (未變動)
+const COLORS = ['R','B','G','Y'];
+const NUMS = [...Array(10).keys()];
+function makeDeck(){ const deck = []; for(const c of COLORS){ for(const n of NUMS){ deck.push({num:n, color:c, id: c + n}); } } return deck; }
+function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
+function draw(deck, n=1){ return deck.splice(0,n); }
+function countByNum(cards){ const map = new Map(); for(const c of cards) map.set(c.num, (map.get(c.num)||0)+1); return map; }
+function isSameColor(cards){ if(!cards || cards.length===0) return false; return cards.every(c=>c.color===cards[0].color); }
+function isStraightFive(nums){ const set = Array.from(new Set(nums)); if(set.length !== 5) return null; for(const s of set){ let ok=true; for(let k=0;k<5;k++){ if(!set.includes((s+k)%10)){ ok=false; break; } } if(ok) return (s+4)%10; } return null; }
+function eval5(cards){ if (!cards || cards.length !== 5) return {cat:9, tie:[-1]}; const nums = cards.map(c=>c.num).sort((a,b)=>a-b); const numCnt = countByNum(cards); const counts = Array.from(numCnt.entries()).sort((a,b)=> b[1]-a[1] || b[0]-a[0]); const sameColor = isSameColor(cards); const straightHigh = isStraightFive(nums); const sortedNums = Array.from(numCnt.entries()).sort((a,b)=>{ if(b[1]!==a[1]) return b[1]-a[1]; return b[0]-a[0]; }).map(x=>x[0]); if(sameColor && straightHigh !== null) return {cat:1, tie:[straightHigh,...sortedNums]}; if(counts[0] && counts[0][1]===4){ return {cat:2, tie:[counts[0][0], counts.find(x=>x[1]===1)?.[0]||-1]}; } if(counts[0]?.[1]===3 && counts[1]?.[1]===2){ return {cat:3, tie:[counts[0][0], counts[1][0]]}; } if(sameColor){ return {cat:4, tie:nums.slice().sort((a,b)=>b-a)}; } if(straightHigh !== null){ return {cat:5, tie:[straightHigh, ...nums.slice().sort((a,b)=>b-a)]}; } if(counts[0]?.[1]===3){ return {cat:6, tie:[counts[0][0], ...Array.from(numCnt.entries()).filter(x=>x[1]===1).map(x=>x[0]).sort((a,b)=>b-a)]}; } if(counts[0]?.[1]===2 && counts[1]?.[1]===2){ const pH = Math.max(counts[0][0], counts[1][0]); const pL = Math.min(counts[0][0], counts[1][0]); return {cat:7, tie:[pH, pL, counts.find(x=>x[1]===1)?.[0]||-1]}; } if(counts[0]?.[1]===2){ return {cat:8, tie:[counts[0][0], ...Array.from(numCnt.entries()).filter(x=>x[1]===1).map(x=>x[0]).sort((a,b)=>b-a)]}; } return {cat:9, tie:nums.slice().sort((a,b)=>b-a)}; }
+function compareRank(a,b){ if(a.cat !== b.cat) return a.cat < b.cat ? 1 : -1; for(let i=0;i<Math.max(a.tie.length,b.tie.length);i++){ const va = a.tie[i]||-1, vb = b.tie[i]||-1; if(va !== vb) return va > vb ? 1 : -1; } return 0; }
+function bestFromHandAndBoard(hand4, boardN){ if(!hand4 || hand4.length !== 4 || !boardN || boardN.length < 3) return {cat:9,tie:[-1]}; let best = null; for(let i=0;i<4;i++){ for(let j=i+1;j<4;j++){ for(let a=0;a<boardN.length;a++){ for(let b=a+1;b<boardN.length;b++){ for(let c=b+1;c<boardN.length;c++){ const five = [hand4[i], hand4[j], boardN[a], boardN[b], boardN[c]]; const e = eval5(five); if(!best || compareRank(e,best)===1) best = e; } } } } } return best || {cat:9,tie:[-1]}; }
+function runMonteCarlo(myHand, boardCards, iterations) { let wins = 0; const known = [...myHand, ...boardCards]; const knownIds = new Set(known.map(c => c.id)); const needed = 5 - boardCards.length; const startDeck = makeDeck().filter(c => !knownIds.has(c.id)); if (startDeck.length < 4 + needed) return 0; for (let i = 0; i < iterations; i++) { let deck = shuffle(startDeck.slice()); const opp = draw(deck, 4); const rem = draw(deck, needed); if (opp.length < 4 || rem.length < needed) continue; const simBoard = [...boardCards, ...rem]; const my = bestFromHandAndBoard(myHand, simBoard); const op = bestFromHandAndBoard(opp, simBoard); if (compareRank(my, op) === 1) wins++; } return wins / iterations; }
+
+// 遊戲狀態
+const START_CHIPS = 50, SB = 1, BB = 2;
+let state = null;
+
+function log(msg) {
+  const el = document.getElementById('logContent');
+  el.textContent = msg + '\n' + el.textContent;
+}
+
+function showMessage(msg, duration = 2000) {
+  const el = document.getElementById('messageOverlay');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), duration);
+}
+
+function renderCard(card, hidden = false) {
+  if (hidden) return `<div class="card card-hidden">?</div>`;
+  return `<div class="card card-${card.color}">${card.num}</div>`;
+}
+
+function updateUI() {
+  // 底池不包含臨時投注
+  const mainPot = state.pot - state.toCall[0] - state.toCall[1];
+  document.getElementById('potDisplay').textContent = mainPot;
+  document.getElementById('playerChips').textContent = '🪙 ' + state.chips[0];
+  document.getElementById('aiChips').textContent = '🪙 ' + state.chips[1];
+  
+  // 臨時投注區
+  document.getElementById('aiBet').textContent = '🪙 ' + state.toCall[1];
+  document.getElementById('playerBet').textContent = '🪙 ' + state.toCall[0];
+  
+  document.getElementById('dealerA').classList.toggle('hidden', state.dealerPosition !== 0);
+  document.getElementById('dealerB').classList.toggle('hidden', state.dealerPosition !== 1);
+  
+  document.getElementById('playerZone').classList.toggle('active', state.playerTurn === 0 && state.gameInProgress);
+  document.getElementById('aiZone').classList.toggle('active', state.playerTurn === 1 && state.gameInProgress);
+  
+  document.getElementById('btnNewGame').classList.toggle('hidden', state.gameInProgress);
+  document.getElementById('actionButtons').classList.toggle('hidden', !state.gameInProgress || state.playerTurn !== 0);
+  document.getElementById('betInputZone').classList.add('hidden');
+}
+
+async function startNewHand() {
+  if (state.chips[0] <= BB) { showMessage("您沒有足夠籌碼！遊戲結束。"); return; }
+  if (state.chips[1] <= BB) { showMessage("AI 沒有足夠籌碼！您獲勝了！"); return; }
+  
+  state.dealerPosition = 1 - state.dealerPosition;
+  const sbPlayer = state.dealerPosition;
+  const bbPlayer = 1 - state.dealerPosition;
+  
+  log(`\n════════════════════`);
+  log(`新局 - 莊家: ${sbPlayer === 0 ? '玩家' : 'AI'}`);
+  
+  state.deck = shuffle(makeDeck());
+  state.handA = draw(state.deck, 4);
+  state.handB = draw(state.deck, 4);
+  state.fullBoard = draw(state.deck, 5);
+  state.board = [];
+  state.pot = 0;
+  state.currentBet = 0;
+  state.toCall = [0, 0];
+  state.street = 0;
+  state.gameInProgress = true;
+  state.lastRaiser = -1;
+  state.minRaiseAmount = BB;
+  
+  // 盲注 (為簡化，盲注不播放動畫)
+  const sbAmount = Math.min(SB, state.chips[sbPlayer]);
+  state.chips[sbPlayer] -= sbAmount;
+  state.toCall[sbPlayer] = sbAmount;
+  state.pot += sbAmount;
+  log(`${sbPlayer === 0 ? '玩家' : 'AI'} 小盲 ${sbAmount}`);
+  
+  const bbAmount = Math.min(BB, state.chips[bbPlayer]);
+  state.chips[bbPlayer] -= bbAmount;
+  state.toCall[bbPlayer] = bbAmount;
+  state.pot += bbAmount;
+  log(`${bbPlayer === 0 ? '玩家' : 'AI'} 大盲 ${bbAmount}`);
+  
+  state.currentBet = bbAmount;
+  state.playerTurn = sbPlayer;
+  state.lastRaiser = bbPlayer;
+  
+  // 渲染卡牌
+  const pHandEl = document.getElementById('playerHand');
+  pHandEl.innerHTML = state.handA.map(c => renderCard(c)).join('');
+  pHandEl.querySelectorAll('.card').forEach((c, i) => {
+    c.style.animationDelay = (i * 0.1) + 's';
+    c.classList.add('card-deal-animate'); // (Req 4) 玩家牌保留翻牌動畫
+  });
+  
+  document.getElementById('aiHand').innerHTML = state.handB.map(c => renderCard(c, true)).join('');
+  document.getElementById('boardCards').innerHTML = ''; // 清空公牌區
+
+  updateUI();
+  await nextTurn();
+}
+
+// --- (Req 2) 修改：AI 邏輯需返回 action text ---
+function monteCarloAI() {
+  log("AI 分析中...");
+  document.getElementById('aiThinking').classList.remove('hidden');
+  
+  const needToCall = Math.max(0, state.currentBet - state.toCall[1]);
+  const winProb = runMonteCarlo(state.handB, state.board, 5000);
+  log(`AI 勝率: ${(winProb * 100).toFixed(1)}%`);
+  
+  const adjustedProb = Math.pow(winProb, 1.5);
+  
+  if (needToCall === 0) {
+    if (winProb < 0.30 && Math.random() < 0.7) {
+      return { type: 'fold', text: '蓋牌' };
+    }
+    if (winProb < 0.30) {
+      const betAmount = Math.max(BB, Math.min(state.chips[1], Math.floor(state.pot * 0.5)));
+      return { type: 'bet', amount: betAmount, text: `下注 ${betAmount}` };
+    }
+    let targetBet = (adjustedProb * state.pot) / (1 - adjustedProb);
+    if (adjustedProb >= 1.0) targetBet = state.chips[1];
+    targetBet = Math.max(BB, Math.min(state.chips[1], Math.floor(targetBet * (0.8 + Math.random() * 0.4))));
+    return { type: 'bet', amount: targetBet, text: `下注 ${targetBet}` };
+  } else {
+    const potOdds = needToCall / (state.pot + needToCall);
+    if (adjustedProb <= potOdds) {
+      return { type: 'fold', text: '蓋牌' };
+    }
+    if (adjustedProb > potOdds + 0.15) {
+      const available = state.chips[1] - needToCall;
+      if (available > 0) {
+        const minRaise = Math.max(BB, state.minRaiseAmount);
+        const raiseAmount = Math.max(minRaise, Math.min(available, Math.floor(state.pot * (0.5 + Math.random()))));
+        const totalBet = needToCall + raiseAmount;
+        return { type: 'raise', amount: raiseAmount, text: `加注到 ${totalBet}` };
+      }
+    }
+    const callAmount = Math.min(needToCall, state.chips[1]);
+    return { type: 'call', amount: callAmount, text: '跟注' };
+  }
+}
+
+// --- (Req 1, 2, 3) 修改：handleAction (重大修改) ---
+async function handleAction(playerIdx, decision) {
+  const name = playerIdx === 0 ? '玩家' : 'AI';
+  const oppIdx = 1 - playerIdx;
+
+  if (decision.type === 'fold') {
+    await showActionFlash(playerIdx, decision.text); // 蓋牌只有宣告
+    log(`${name} 蓋牌`);
+    await endHand(oppIdx);
+    return;
+  }
+  
+  const needToCall = state.currentBet - state.toCall[playerIdx];
+  let put = 0;
+  let isAggressive = false;
+  let actionAmount = 0;
+  
+  if (decision.type === 'call') {
+    put = Math.min(needToCall, state.chips[playerIdx]);
+    actionAmount = put;
+    log(`${name} 跟注 ${put}${put < needToCall ? ' (All-in)' : ''}`);
+  } else if (decision.type === 'bet') {
+    put = Math.min(decision.amount || BB, state.chips[playerIdx]);
+    actionAmount = put;
+    log(`${name} 下注 ${put}`);
+    isAggressive = true;
+  } else if (decision.type === 'raise') {
+    const raiseAmount = decision.amount;
+    put = Math.min(needToCall + raiseAmount, state.chips[playerIdx]);
+    actionAmount = put - needToCall; // 這是「額外」加注的量
+    log(`${name} 加注到 ${state.toCall[playerIdx] + put}`);
+    isAggressive = true;
+  }
+
+  // --- (Req 3) 播放行動宣告和籌碼動畫 (並行) ---
+  const flashPromise = showActionFlash(playerIdx, decision.text);
+  
+  let chipPromise = Promise.resolve();
+  if (put > 0) {
+    const fromEl = playerIdx === 0 ? document.getElementById('playerChips') : document.getElementById('aiChips');
+    const toEl = playerIdx === 0 ? document.getElementById('playerBet') : document.getElementById('aiBet');
+    chipPromise = animateChipMove(fromEl, toEl, put);
+  }
+  
+  // 等待兩個動畫都完成
+  await Promise.all([flashPromise, chipPromise]);
+  // --- 動畫結束 ---
+
+  // 在動畫後更新狀態
+  state.chips[playerIdx] -= put;
+  state.toCall[playerIdx] += put;
+  state.pot += put;
+  
+  if (isAggressive) {
+    state.currentBet = state.toCall[playerIdx];
+    state.lastRaiser = playerIdx;
+    state.minRaiseAmount = actionAmount; // 設置最小「額外」加注量
+  }
+
+  // 在結算前手動更新 UI
+  updateUI();
+  
+  // (處理 All-in 不足額的退款)
+  if (decision.type === 'call' && put < needToCall) {
+    const refund = needToCall - put;
+    // 退款動畫
+    const refundFromEl = document.getElementById(oppIdx === 0 ? 'playerBet' : 'aiBet');
+    const refundToEl = document.getElementById(oppIdx === 0 ? 'playerChips' : 'aiChips');
+    await animateChipMove(refundFromEl, refundToEl, refund);
+    
+    state.chips[oppIdx] += refund;
+    state.toCall[oppIdx] -= refund;
+    state.pot -= refund;
+    updateUI(); // 再次更新UI以顯示退款
+  }
+  
+  const allIn = state.chips[0] === 0 || state.chips[1] === 0;
+  const betMatched = state.toCall[0] === state.toCall[1];
+  
+  if (betMatched) {
+    if (allIn) {
+      await fastForwardToShowdown();
+    } else {
+      await progressStreet();
+    }
+  } else {
+    state.playerTurn = oppIdx;
+    await nextTurn();
+  }
+}
+
+async function nextTurn() {
+  updateUI();
+  if (!state.gameInProgress) return;
+  
+  if (state.playerTurn === 0) {
+    promptPlayerAction();
+  } else {
+    setTimeout(async () => {
+      const decision = monteCarloAI();
+      document.getElementById('aiThinking').classList.add('hidden');
+      await handleAction(1, decision);
+    }, 800);
+  }
+}
+
+function promptPlayerAction() {
+  const needToCall = state.currentBet - state.toCall[0];
+  const btnCall = document.getElementById('btnCall');
+  const btnRaise = document.getElementById('btnRaise');
+  
+  if (needToCall === 0) {
+    btnCall.classList.add('hidden');
+    btnRaise.textContent = '下注';
+  } else {
+    btnCall.classList.remove('hidden');
+    btnCall.textContent = needToCall >= state.chips[0] ? `All-in (${state.chips[0]})` : `跟注 ${needToCall}`;
+    btnRaise.textContent = '加注';
+    if (needToCall >= state.chips[0]) {
+      btnRaise.classList.add('hidden');
+    } else {
+      btnRaise.classList.remove('hidden');
+    }
+  }
+  updateUI();
+}
+
+// --- (Req 3, 4, 5, 6) 修改：progressStreet (動畫並行) ---
+async function progressStreet() {
+  // Bugfix 2: 在圈結算時，將行動權設為中立(-1)，並更新UI移除active狀態
+  state.playerTurn = -1;
+  updateUI();
+
+  // (Req 1, 5, 6) 增加延遲，讓玩家看到匹配的賭注
+  await delay(500); 
+  // --- 延遲結束 ---
+
+  // --- (Req 5) 圈結算動畫 (籌碼) ---
+  const potEl = document.getElementById('potDisplay');
+  const playerBetEl = document.getElementById('playerBet');
+  const aiBetEl = document.getElementById('aiBet');
+  const playerBetAmount = state.toCall[0];
+  const aiBetAmount = state.toCall[1];
+  let animations = [];
+  
+  if (playerBetAmount > 0) animations.push(animateChipMove(playerBetEl, potEl, playerBetAmount));
+  if (aiBetAmount > 0) animations.push(animateChipMove(aiBetEl, potEl, aiBetAmount));
+  
+  const settlementPromise = Promise.all(animations);
+  // --- 籌碼動畫 promise 建立 ---
+
+  // 在籌碼飛行時，立即更新狀態並清空臨時投注區
+  state.currentBet = 0;
+  state.toCall = [0, 0];
+  updateUI(); // 清空 toCall 顯示
+
+  // --- (Req 5) 新圈發牌 (狀態更新) ---
+  state.street++;
+  state.minRaiseAmount = BB;
+  state.playerTurn = state.dealerPosition;
+  state.lastRaiser = -1;
+  
+  const streets = ['', '翻牌', '轉牌', '河牌'];
+  let cardPromise = Promise.resolve(); // 預設
+
+  if (state.street <= 3) {
+    log(`\n─── ${streets[state.street]} ───`);
+    if (state.street === 1) state.board = state.fullBoard.slice(0, 3);
+    else if (state.street === 2) state.board = state.fullBoard.slice(0, 4);
+    else if (state.street === 3) state.board = state.fullBoard.slice(0, 5);
+    
+    // (Req 4 & 5) 獲取新卡牌動畫的 Promise
+    cardPromise = renderNewBoardCards('card-slide-in-right-animate');
+  }
+  
+  // (Req 5) 等待圈結算 *和* (如果有的話) 新卡牌動畫同時完成
+  await Promise.all([settlementPromise, cardPromise]);
+
+  if (state.street > 3) {
+    await endHandShowdown(); // 河牌圈結束，進入攤牌
+    return;
+  }
+
+  // (All-in runout)
+  if (state.chips[0] === 0 || state.chips[1] === 0) {
+    setTimeout(async () => await progressStreet(), 600);
+  } else {
+    await nextTurn(); // 正常進入下一輪
+  }
+}
+
+// (Req 4) 修改：fastForwardToShowdown (改動畫)
+async function fastForwardToShowdown() {
+  log("All-in 快速開牌！");
+  
+  // 結算動畫
+  const potEl = document.getElementById('potDisplay');
+  const playerBetEl = document.getElementById('playerBet');
+  const aiBetEl = document.getElementById('aiBet');
+  const playerBetAmount = state.toCall[0];
+  const aiBetAmount = state.toCall[1];
+  let animations = [];
+  if (playerBetAmount > 0) animations.push(animateChipMove(playerBetEl, potEl, playerBetAmount));
+  if (aiBetAmount > 0) animations.push(animateChipMove(aiBetEl, potEl, aiBetAmount));
+  if (animations.length > 0) await Promise.all(animations);
+  
+  state.toCall = [0, 0];
+  updateUI(); // 清空臨時投注
+
+  while (state.street < 3) {
+    state.street++;
+    if (state.street === 1) state.board = state.fullBoard.slice(0, 3);
+    if (state.street === 2) state.board = state.fullBoard.slice(0, 4);
+    if (state.street === 3) state.board = state.fullBoard.slice(0, 5);
+  }
+  
+  // (Req 4) 渲染所有缺失的社區牌並添加 *滑入* 動畫
+  // 這裡不需要 promise，因為我們依賴 setTimeout 來等待
+  const boardEl = document.getElementById('boardCards');
+  const oldCardCount = boardEl.children.length;
+  if (oldCardCount < state.board.length) {
+    let newCardsHTML = '';
+    for (let i = oldCardCount; i < state.board.length; i++) {
+      newCardsHTML += renderCard(state.board[i]);
+    }
+    boardEl.innerHTML += newCardsHTML;
+    
+    boardEl.querySelectorAll('.card').forEach((c, i) => {
+      if (i >= oldCardCount) {
+        c.style.animationDelay = ((i - oldCardCount) * 0.1) + 's';
+        c.classList.add('card-slide-in-right-animate'); // (Req 4) 改用新動畫
+      }
+    });
+  }
+  
+  // updateUI(); // 已在前面調用
+  setTimeout(async () => await endHandShowdown(), 1200);
+}
+
+async function endHandShowdown() {
+  log("\n═══ 攤牌 ═══");
+  state.street = 4;
+  state.gameInProgress = false;
+  
+  const evalA = bestFromHandAndBoard(state.handA, state.board);
+  const evalB = bestFromHandAndBoard(state.handB, state.board);
+  
+  const cats = ["", "同花順", "四條", "葫蘆", "同花", "順子", "三條", "兩對", "一對", "高牌"];
+  log(`玩家: ${cats[evalA.cat]}`);
+  log(`AI: ${cats[evalB.cat]}`);
+  
+  // 渲染 AI 手牌 (保留翻牌動畫)
+  const aiHandEl = document.getElementById('aiHand');
+  aiHandEl.innerHTML = state.handB.map(c => renderCard(c)).join('');
+  aiHandEl.querySelectorAll('.card').forEach((c, i) => {
+    c.style.animationDelay = (i * 0.1) + 's';
+    c.classList.add('card-deal-animate');
+  });
+
+  updateUI();
+
+  const cmp = compareRank(evalA, evalB);
+  if (cmp === 1) await endHand(0);
+  else if (cmp === -1) await endHand(1);
+  else await endHand(-1);
+}
+
+// --- (Req 1) 修改：endHand (修改贏錢終點) ---
+async function endHand(winner) {
+  state.gameInProgress = false;
+  const potAmount = state.pot;
+  
+  // 籌碼動畫 (贏家收池)
+  const potEl = document.getElementById('potDisplay');
+  
+  if (winner === 0) {
+    log(`\n🎉 玩家獲勝！+${potAmount}`);
+    showMessage(`🎉 您獲勝了！+${potAmount}`, 3000);
+    // (Req 1) 終點改為金幣圖示
+    if (potAmount > 0) await animateChipMove(potEl, document.getElementById('playerChips'), potAmount);
+    state.chips[0] += potAmount;
+  } else if (winner === 1) {
+    log(`\n💔 AI 獲勝 -${potAmount}`);
+    showMessage(`💔 AI 獲勝`, 3000);
+    // (Req 1) 終點改為金幣圖示
+    if (potAmount > 0) await animateChipMove(potEl, document.getElementById('aiChips'), potAmount);
+    state.chips[1] += potAmount;
+  } else {
+    log(`\n🤝 平手！`);
+    showMessage('🤝 平手！', 2000);
+    if (potAmount > 0) {
+      const half = Math.floor(potAmount / 2);
+      const rem = potAmount - half;
+      // (Req 1) 終點改為金幣圖示
+      await Promise.all([
+        animateChipMove(potEl, document.getElementById('playerChips'), half),
+        animateChipMove(potEl, document.getElementById('aiChips'), rem)
+      ]);
+      state.chips[0] += half;
+      state.chips[1] += rem;
+    }
+  }
+  // --- 動畫結束 ---
+
+  state.pot = 0;
+  state.toCall = [0, 0];
+  updateUI();
+
+  // (僅在蓋牌時揭示AI手牌)
+  const aiHandEl = document.getElementById('aiHand');
+  if (aiHandEl.querySelector('.card-hidden')) {
+    aiHandEl.innerHTML = state.handB.map(c => renderCard(c)).join('');
+    aiHandEl.querySelectorAll('.card').forEach((c, i) => {
+      c.style.animationDelay = (i * 0.1) + 's';
+      c.classList.add('card-deal-animate'); // (Req 4) 保留翻牌動畫
+    });
+  }
+}
+
+// 事件監聽器
+document.addEventListener('DOMContentLoaded', () => {
+  state = {
+    deck: [], handA: [], handB: [], board: [], fullBoard: [],
+    chips: [START_CHIPS, START_CHIPS], pot: 0, currentBet: 0,
+    toCall: [0, 0], street: 0, playerTurn: 0, gameInProgress: false,
+    dealerPosition: 1, minRaiseAmount: BB
+  };
+  
+  updateUI();
+  
+  document.getElementById('btnNewGame').addEventListener('click', startNewHand);
+  
+  // --- (Req 2) 修改：事件監聽器需傳遞 action text ---
+  document.getElementById('btnFold').addEventListener('click', async () => {
+    // Bugfix 1: 立即隱藏按鈕提供反饋
+    document.getElementById('actionButtons').classList.add('hidden');
+    await handleAction(0, { type: 'fold', text: '蓋牌' });
+  });
+  
+  document.getElementById('btnCall').addEventListener('click', async () => {
+    // Bugfix 1: 立即隱藏按鈕提供反饋
+    document.getElementById('actionButtons').classList.add('hidden');
+    const need = state.currentBet - state.toCall[0];
+    const callAmount = Math.min(need, state.chips[0]);
+    await handleAction(0, { type: 'call', amount: callAmount, text: '跟注' });
+  });
+  
+  document.getElementById('btnRaise').addEventListener('click', () => {
+    document.getElementById('actionButtons').classList.add('hidden');
+    document.getElementById('betInputZone').classList.remove('hidden');
+    
+    const need = state.currentBet - state.toCall[0];
+    const input = document.getElementById('betInput');
+    const totalChips = state.chips[0]; // (玩家剩餘籌碼)
+    
+    if (need > 0) { // 對方有下注 (Raise)
+      const minRaiseAmount = Math.max(BB, state.minRaiseAmount);
+      // (minTotalBet) = (需要跟注的) + (最小額外加注)
+      const minTotalBet = Math.min(totalChips, need + minRaiseAmount);
+
+      input.min = minTotalBet; // (最小下注總額)
+      input.max = totalChips; // (最大下注總額 = All-in)
+      input.value = minTotalBet;
+      
+    } else { // 輪到自己下注 (Bet)
+      const minBet = Math.min(totalChips, BB);
+      input.min = minBet;
+      input.max = totalChips;
+      input.value = minBet;
+    }
+  });
+  
+  document.getElementById('btnCancel').addEventListener('click', () => {
+    document.getElementById('actionButtons').classList.remove('hidden');
+    document.getElementById('betInputZone').classList.add('hidden');
+  });
+  
+  // --- (Req 2) 修改：事件監聽器需傳遞 action text ---
+  document.getElementById('btnConfirm').addEventListener('click', async () => {
+    const input = document.getElementById('betInput');
+    const betAmount = parseInt(input.value, 10); // 這是玩家「總共」要投入的籌碼 (相對於自己)
+    const needToCall = state.currentBet - state.toCall[0];
+    
+    const minBet = parseInt(input.min, 10);
+    const maxBet = parseInt(input.max, 10);
+    
+    if (betAmount < minBet || betAmount > maxBet) {
+      showMessage(`金額必須介於 ${minBet} 和 ${maxBet}`);
+      return;
+    }
+    
+    // `input.value` (`betAmount`) 代表的是玩家 *還要再投多少錢*
+    
+    const finalDecision = needToCall > 0 
+      ? { type: 'raise', amount: betAmount - needToCall, text: `加注到 ${betAmount}` } // amount = 額外加的
+      : { type: 'bet', amount: betAmount, text: `下注 ${betAmount}` }; // amount = 總共下的
+    
+    
+    document.getElementById('betInputZone').classList.add('hidden');
+    await handleAction(0, finalDecision);
+  });
+  
+  document.querySelectorAll('.bet-input-wrapper .btn-tiny').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const action = e.target.dataset.action;
+      const input = document.getElementById('betInput');
+      const min = parseInt(input.min, 10);
+      const max = parseInt(input.max, 10);
+      let val = parseInt(input.value, 10);
+      
+      switch (action) {
+        case 'min': val = min; break;
+        case 'allin': val = max; break;
+        case 'plus1': val = Math.min(max, val + 1); break;
+        case 'minus1': val = Math.max(min, val - 1); break;
+        case 'plus5': val = Math.min(max, val + 5); break;
+        case 'minus5': val = Math.max(min, val - 5); break;
+      }
+      input.value = val;
+    });
+  });
+});
+</script>
+</body>
+</html>
